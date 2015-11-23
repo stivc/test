@@ -1,123 +1,109 @@
 ## ssh basics
 
-Secure shell aka ssh is a protocol for securely encrypted and authenticated
-communication between computers.  An ssh server is running a daemon that
-listens for incoming connections from the internet.
+Secure shell (SSH) is a TCP protocol for securely encrypted and authenticated
+communication between computers.  An ssh user may use an ssh client program
+to connect to an ssh server and then run commands on that server.
 
-An ssh client connects to the server, which provides a command line interface
-(CLI) for executing commands on the server.  The CLI provided by the server
-is typically bash, and the server is typically Linux or some other 
-UNIX-workalike.  Here is a a session where we log in, check to see who is
-logged in, what the disk space situation is, how busy the system is.  Then
-the session is logged out.  The '$' is a shell prompt, this example assumes
-you are logging in from a shell terminal.
+    $ ssh remoteuser@remotehost -p remoteport
+    Logged in to remotehost
+    remotehost$ run-a-command
+    See results
+    remotehost$ exit
+    $
 
-The specific ssh command invoked in the example will try to connect to a 
-host with name 'remotehost.example.com' on port 22.  It assumes the remote
-user name is rname.  Port 22 is in fact the default port for ssh servers
-and so "-p 22" was not required, but if the server runs on a nonstandard
-port, this command line option tells the client what destination port to
-try.
+An ssh client connects to the server, which provides 
+a command-line interface (CLI).  Usually the server is running Linux or another
+UNIX work-alike operating system, and the CLI is usually `bash`.
 
-------
-$ ssh rname@remotehost.example.com -p 22
-Password:
-Last login: Sat Nov 21 10:45:48 2015 from your.other.workstation
+Access to a graphical environment on a remote system is another thing, provided
+by "Remote Desktop" on windows or Macintosh.  That kind of access requires 
+more overhead and is outside the scope of this summary.
 
-** Message of the day is: **
-** Your system prompt is probably 'remotehost$ ' **
+# What `ssh` does.
 
-remotehost$ w
-(see who is logged in to this server)
-remotehost$ df
-(see what current disk usage is)
-remotehost$ uptime
-(see how long system has been up, and how heavy the system load is)
-remotehost$ exit
-(log out and get back the system prompt of your workstation)
-$ next-command-typed-which-will-run-on-your-local-workstation
------
+Imagine that some agent or agency is eavesdropping on one of the network links
+between your laptop and the remote server that you make use of.  If you use
+ssh for your back-and-forth communication, then the agent cannot see the
+actual content of the communication.  Instead, the agent sees only an encrypted
+version that has the appearance of randomness.
 
-Thanks to the ssh protocol, an agent that sees all communication between
-your workstation and the server cannot determine what transpired.
-Though your password was transmitted, it cannot be sniffed out from the
-network traffic because it was encrypted.
+An important example of the information that `ssh` protects is your password.
+If you sent a password to the server the verify your identity, the eavesdropper
+cannot see it.  If the eavesdropper cannot get your password, then the
+eavesdropper cannot later misuse your password to pretending to be you and
+gain access to resources.
 
-This is the huge advantage of ssh over older protocols and utilities
-such as telnet and rsh.
+In the bad days of the early 1990s, people commonly sent passwords
+over the internet in 'plaintext'.  The internet was no longer a friendly 
+village where everyone knew each other, and so something like `ssh` was
+needed.  The first implementations of `ssh` were released to the public in
+1995.  (Wikipedia article)[https://en.wikipedia.org/wiki/Secure_Shell].
 
-# Using a private key to log in
+# Concept: Using a private key to log in
 
-Passwords are trouble: you should not re-use them, but then you need to keep
-track of them, which is a nuisance.  The SSH protocol is built on public key
-cryptography and and public-key cryptography can be used to allow secure
-communications without passwords.
+Managing passwords is a nuisance even if network encryption does make them
+safer to use.  The underlying technology of the SSH protocol is public key
+cryptography (PKI) and PKI can be adapted to replace passwords as a method
+of authentication.
 
-PKI (public-key infrastructure) depends on key-pairs.  A key pair consists
-of two keys: a public key and a private key.  The public key can be known to
-all, in fact, it is convenient to publish your public keys.  The private key
-however should be a guarded secret.  The key-pair can be randomly generated
-using a utility such as `ssh-keygen`.
+SSH relies on /key pairs/.  A key pair consists of a /public key/ and
+a /private key/.  The public key can and should be advertised as being
+your key.  Anyone who knows your public key and knows that you claim
+it can then /grant you access to their systems/.  So it is mostly not
+a problem if everyone knows the key and the fact that you are its owner.
 
-There is a mathematical one-to-one correspondence between public keys and
-private keys.  The PKI magic comes from the fact that although the public
-key can be calculated from the private key, there is no known algorithm
-that can derive the private key from the public key.
+The /private key/, on the other hand, should be a guarded secret.  The remote
+server also has a public and private key.  If you want to know the full
+glory of how this works, you can try 
+(Wikipedia)[https://en.wikipedia.org/wiki/Public-key_cryptography].
 
-Skipping details, the key-pair can be used to secure communications so that
+If an SSH server is configured to allow logins from your public key,
+then you can use the corresponding private key to prove your identity and
+the server will allow you to login.
 
-- each party knows the public key of the other party.
+Before you can use your key-pair you need to create one.
 
-- each party can /prove/ they have the private key that correspondings to who they claim to be.  They can prove they have this key, without showing any part of it.
+# Creating your own key-pair
 
-That is not all.  
+Details will depend on your platform, and graphical programs will have menus
+to help with this.  In a command-line environment, generating the key pair
+looks something like this:
 
-- each party can encrypt communication, using the other party's public key.  
-The communications can only be decrypted 
-by the possessor of the corresponding private key.
+    $ ssh-keygen -t rsa 
+    Generating public/private rsa key pair.
+    Enter file in which to save the key (/.../.ssh/id_rsa):
+(press return to save the private key in default location.)
+    Enter passphrase (empty for no passphrase):
+(enter a passphrase to help guard your private key.)
+    Enter same passphrase again:
+    Your identification has been saved in .../id_rsa.
+    Your public key has been saved in .../id_rsa.pub.
+(... possibly more output ...)
+    $
 
-- each party can verify, using the other party's public key, that a received
-communication really is from the posessor of the corresponding private key.
+The file `id_rsa` contains the private key and the file `id_rsa.pub` contains
+the private key.
 
-This concludes that hard math.
+The command-line environment can be a shell (e.g. `bash`) on a Linux or
+Mac terminal.  Windows doesn't provide bash and ssh tools by default but
+they come with installable applications such as /Cygwin/ or /Git for Windows/.
 
-= Generating your own key pair
+= Using your private key.
 
-Use the `ssh-keygen` utility.  This is part of Linux and Macintosh systems
-by default.  On a Windows system it is included with various toolsets such
-as Cygwin and Git for Windows.
+  (fill in)
 
-(to be continued.)
+= Using `ssh-agent`.
 
-(include the why of passphrases, and caution about dispensing with them.)
+  (fill in)
 
-# some other services that rely on ssh protocol
+# uploading your public key to GitHub
 
-(expand)
-scp including WinSCP, sshfs, GitHub
+  (an example of a cloud service that uses ssh for authentication.
+   also, this is a way of publishing your public key).
 
-# uploading your public key
+  In closing explain the MiM issue when distributing keys.
 
-(expand)
-to Github, to AWS, to your friends.  MiM attack.
+# uploading your public key to AWS
 
-explain how AWS will generate a key pair for you, but that using this feature
-is somewhat contrary to The Way of the Secure Shell.
+  (fill in)
 
-when to share key-pairs.
-
-# sshd on AWS Linux servers
-
-(expand)
-general knowledge and configuration settings.
-enabling PKI.
-
-# sshd on non-Linux servers
-
-(expand)
-Mac an other UNIX systems similar.
-Windows very different 
-but sshd that comes with Cygwin 
-can be set up and can be very useful.
-
-# (continue?)
