@@ -108,3 +108,7 @@ that does support these utilities.
 
   (fill in)
 
+  Explain how they will generate a key for you and issues around that.
+  When to share a key-pair.
+  Couple of ideas for Initializing your new instance.
+
