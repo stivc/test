@@ -5,59 +5,43 @@ communication between computers.  An ssh user may use an ssh client program
 to connect to an ssh server and then run commands on that server.
 
     $ ssh remoteuser@remotehost -p remoteport
-Logged in to remotehost
-    remotehost$ run-a-command
-See results
-    remotehost$ exit
-    $
 
-An ssh client connects to the server, which provides 
-a command-line interface (CLI).  Usually the server is running Linux or another
-UNIX work-alike operating system, and the CLI is usually `bash`.
+The commandline in the above example logs into the `remoteuser` account on the
+`remotehost` machine.  `-p remoteport` is an option to specify which TCP port
+to use on the remote system.
 
-## What `ssh` does.
+There are at least two ways to use ssh to log in to a remote account.  One
+is to have a password:
 
-Imagine that some agent or agency is eavesdropping on one of the network links
-between your laptop and the remote server that you make use of.  If you use
-ssh for your back-and-forth communication, then the agent cannot see the
-actual content of the communication.  Instead, the agent sees only an encrypted
-version that has the appearance of random strings.
+    $ ssh remoteuser@remotehost
+    Password:
 
-An important example of the information that `ssh` protects is your password.
-If you sent a password to the server the verify your identity, the eavesdropper
-cannot see it.  If the eavesdropper cannot get your password, then the
-eavesdropper cannot later reuse your password to pretending to be you and
-gain access to resources.
+This establishes an encrypted connection and sends the password over that 
+connection so that the server can decide to allow the login or not.
 
-In the bad days of the early 1990s, people commonly sent passwords
-over the internet in plaintext.  But the internet had stopped being a
-friendly place where everyone knew everyone, so there were problems.
-The first implementations of `ssh` were released to the public in 1995.
-[Wikipedia article[(https://en.wikipedia.org/wiki/Secure_Shell).
+A different approach is to use a private key.  Instructions on making and
+propagating a private key appear below.  The way that this would work is:
 
-## Concept: Using a private key to log in
+    $ ssh remoteuser@remotehost
+    Enter passphrase for key '/home/localuser/.ssh/id_rsa':
 
-Managing passwords is a nuisance even if network encryption does make them
-safer to use.  The underlying technology of the SSH protocol is public key
-cryptography (PKI) and PKI can be adapted to replace passwords as a method
-of authentication.
+This might not appear to have any advantages over the password approach, but
+it does.  The private key is kept in your workstations home directory in an
+encrypted format.  Your client program, takes the entered passphrase and uses
+it to decrypt the private key.  The client program then uses the private key
+to /negotiate/ with the server.  The client /negotiates/ a proof that you are
+the holder of the private key that corresponds with a public key.  The
+public key matching the private key is like an identity -- at the conclusion
+of the negotiation, the client program has proved that it posessed an identity.
 
-SSH relies on *key pairs*.  A key pair consists of a *public key* and
-a *private key*.  The public key can and should be advertised as being
-your key.  Anyone who knows your public key and knows that you claim
-it can then *grant you access to their systems*.  So it is mostly not
-a problem if everyone knows the key and the fact that you are its owner.
+The identity is stored in a file, sometimes called `id_rsa`.  The identity file
+is encrypted so that someone reading your hard disk cannot steal it.
 
-The *private key*, on the other hand, should be a guarded secret.  The remote
-server also has a public and private key.  If you want to know the full
-glory of how this works, you can try 
-[Wikipedia](https://en.wikipedia.org/wiki/Public-key_cryptography).
-
-If an SSH server is configured to allow logins from your public key,
-then you can use the corresponding private key to prove your identity and
-the server will allow you to login.
-
-Before you can use your key-pair you need to create one.
+Note that the private key isn't sent to the server.  Whereas you shouldn't
+use the same password for different services and managing the plethora of
+passwords is a hassle, private keys have no such problem.  For services
+that accept private-key crytographic systems like ssh, you can safely
+use the same private key everywhere.
 
 ## Creating your own key-pair
 
@@ -68,47 +52,27 @@ looks something like this:
     $ ssh-keygen -t rsa 
     Generating public/private rsa key pair.
     Enter file in which to save the key (/.../.ssh/id_rsa):
+
 (press return to save the private key in default location.)
 
     Enter passphrase (empty for no passphrase):
+
 (enter a passphrase to help guard your private key.)
 
     Enter same passphrase again:
     Your identification has been saved in .../id_rsa.
     Your public key has been saved in .../id_rsa.pub.
-(... possibly more output ...)
 
 The file `id_rsa` contains the private key and the file `id_rsa.pub` contains
-the private key.
+the private key.  `id_rsa.pub` is a one line file containing your public key.
+Distribute the `id_rsa.pub` to systems where you would like to log in.
 
-The command-line environment can be a shell (e.g. `bash`) on a Linux or
-Mac terminal.  Windows doesn't provide bash and ssh tools by default but
-[Cygwin](https://www.cygwin.com/) is a powerful environment for Windows
-that does support these utilities.
+SSH servers must know the /public/ keys of those that are allowed to
+log in.  On UNIX-like systems, the list of public keys for which access
+is allowed is kept in the file `$HOME/.ssh/authorized_keys`.
 
-## Using your private key.
+## Coming soon
 
-  (fill in)
+How to register your public key on GitHub.
 
-## Using `ssh-agent`.
-
-  (fill in)
-
-## uploading your public key to GitHub
-
-  (an example of a cloud service that uses ssh for authentication.
-   also, this is a way of publishing your public key).
-
-  Explain importance of using a passphrase in this context, alluding to 
-  Git for Windows.
-
-  In closing explain the MiM issue when distributing keys.
-
-## uploading your public key to AWS
-
-  (fill in)
-
-  Explain how they will generate a key for you and issues around that.
-  When to share a key-pair.
-  Couple of ideas for Initializing your new instance.
-
+How to grant login access to a github user with a published public key.
